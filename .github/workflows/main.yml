@@ -1,0 +1,34 @@
+# .github/workflows/main.yml
+
+name: Create Daily CSV from Spreadsheet
+
+# GASからのHTTPリクエスト(repository_dispatch)をトリガーにする
+on:
+  repository_dispatch:
+    types: [spreadsheet-data]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. リポジトリをチェックアウト（コードを読み込む）
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # シークレットに保存したトークンを使用する
+          token: ${{ secrets.GH_TOKEN }}
+
+      # 2. dailyフォルダを作成し、CSVファイルを生成
+      - name: Create Daily CSV
+        run: |
+          mkdir -p daily
+          echo "${{ github.event.client_payload.data }}" > daily/${{ github.event.client_payload.filename }}
+      
+      # 3. 変更内容をコミット＆プッシュ
+      - name: Commit & Push
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add daily/${{ github.event.client_payload.filename }}
+          git commit -m "📈 Automated daily data update: ${{ github.event.client_payload.filename }}"
+          git push
