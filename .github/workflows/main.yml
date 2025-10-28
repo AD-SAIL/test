@@ -1,5 +1,3 @@
-# .github/workflows/main.yml
-
 name: Create Daily CSV from Spreadsheet
 
 # GASからのHTTPリクエスト(repository_dispatch)をトリガーにする
@@ -18,11 +16,14 @@ jobs:
           # シークレットに保存したトークンを使用する
           token: ${{ secrets.GH_TOKEN }}
 
-      # 2. dailyフォルダを作成し、CSVファイルを生成
+      # 2. dailyフォルダを作成し、CSVファイルをダウンロード
+      # ★ 修正： Google DriveのダウンロードURLからcurlでダウンロードする
       - name: Create Daily CSV
         run: |
           mkdir -p daily
-          echo "${{ github.event.client_payload.data }}" > daily/${{ github.event.client_payload.filename }}
+          # GASから送られてきたGoogle DriveのダウンロードURLを使用
+          # -L オプションはリダイレクトに従うために必要
+          curl -L "${{ github.event.client_payload.download_url }}" -o daily/${{ github.event.client_payload.filename }}
       
       # 3. 変更内容をコミット＆プッシュ
       - name: Commit & Push
@@ -30,5 +31,9 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add daily/${{ github.event.client_payload.filename }}
-          git commit -m "daily data update: ${{ github.event.client_payload.filename }}"
+          
+          # ★ 修正： 変更があった場合のみコミットを実行する（「変更なし」エラーを回避）
+          git diff --staged --quiet || git commit -m "📈 Automated daily data update: ${{ github.event.client_payload.filename }}"
+          
           git push
+
