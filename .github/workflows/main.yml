@@ -33,7 +33,7 @@ jobs:
           git add daily/${{ github.event.client_payload.filename }}
           
           # ★ 修正： 変更があった場合のみコミットを実行する（「変更なし」エラーを回避）
-          git diff --staged --quiet || git commit -m "📈 Automated daily data update: ${{ github.event.client_payload.filename }}"
+          git diff --staged --quiet || git commit -m "daily data update: ${{ github.event.client_payload.filename }}"
           
           git push
 
